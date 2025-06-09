@@ -100,6 +100,8 @@ self_update() {
             quit 1
         fi
         pushd "${TA_UPDATE_TMPFILE}" >/dev/null || return
+        local time
+        time=$(date '+%s')
         zypper --non-interactive --pkg-cache-dir "${TA_UPDATE_TMPFILE}" download transactional-update
         if ! find . -name 'transactional-update*.rpm' -exec rpm2cpio {} \; | cpio -idmv 2>/dev/null; then
             log_error "ERROR: Couldn't extract the update."
@@ -116,6 +118,9 @@ self_update() {
             rm -rf "${TA_UPDATE_TMPFILE}"
             return
         fi
+        # zypper cannot import any key, as it's running in a readable-only snapshot
+        # delete any leftover keys so that zypper can try again to import them later
+        find /var/tmp/zypp{,.*} -type f -name "pubkey.*" -newermt "$time" -delete
         export TA_UPDATE_TMPFILE
         exec "${TA_UPDATE_TMPFILE}/usr/sbin/transactional-update" "$@" 1>&${origstdout} 2>&${origstderr}
     fi
