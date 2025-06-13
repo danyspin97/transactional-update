@@ -387,7 +387,8 @@ int main(int argc, const char* argv[])
                     cerr << "Error while processing " << it->first << ": ";
                     perror("lchown");
                 }
-                const struct timespec newtimes[2] = {{.tv_sec = sourcestat.stx_atime.tv_sec, .tv_nsec = sourcestat.stx_atime.tv_nsec},{.tv_sec = sourcestat.stx_mtime.tv_sec, .tv_nsec = sourcestat.stx_mtime.tv_nsec}};
+                // utimensat takes seconds/microseconds, while statx gives seconds/nanoseconds. Perform the conversion
+                const struct timespec newtimes[2] = {{.tv_sec = sourcestat.stx_atime.tv_sec, .tv_nsec = sourcestat.stx_atime.tv_nsec / 1000},{.tv_sec = sourcestat.stx_mtime.tv_sec, .tv_nsec = sourcestat.stx_mtime.tv_nsec / 1000}};
                 if (utimensat(AT_FDCWD, (currentdir / it->first).c_str(), newtimes, AT_SYMLINK_NOFOLLOW) == -1) {
                     cerr << "Error while processing " << it->first << ": ";
                     perror("utimensat");
